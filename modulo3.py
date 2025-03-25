@@ -1,77 +1,52 @@
-from datetime import datetime  # Importar módulo para el control de fechas
+import hashlib  # Modulo para calcular checksums
 
-class PullRequest:  # Clase para manejar los pull requests
-    def __init__(self, id_pr, titulo, descripcion, autor, rama_origen, rama_destino):
-        self.id_pr = id_pr  # ID de pull request
-        self.titulo = titulo  # Título del pull request
-        self.descripcion = descripcion  # Descripción del pull request
-        self.autor = autor  # Autor del pull request
-        self.fecha_creacion = datetime.now()  # Fecha de creación del pull request
-        self.rama_origen = rama_origen  # Rama de la ruta de origen
-        self.rama_destino = rama_destino  # Rama de destino del pull request
-        self.estado = "pendiente"  # Estados: pendiente, en revisión, aprobado, fusionado, rechazado
-        self.commits_asociados = []  # Lista de commits asociados al pull request
-        self.archivos_modificados = []  # Lista de archivos modificados en el pull request
-        self.revisores_asignados = []  # Lista de revisores asignados al pull request
-        self.fecha_cierre = None  # Fecha de cierre del pull request (inicialmente None)
+class Archivo:
+    def __init__(self, nombre, ubicacion, estado, checksum):
+        # Iniciamos un objeto Archivo con los siguientes atributos
+        self.nombre = nombre
+        self.ubicacion = ubicacion # la ubicacion es la raiz del sistema de archivos
+        self.estado = estado  # Estado del archivo ('A' para Agregado, 'M' para Modificado, 'D' para Eliminado)
+        self.checksum = checksum  # Checksum del archivo para verificar integridad
+        # el checksum es un valor unico que se calcula a partir del contenido del archivo
 
-class ColaPullRequests:
+class Staging:
     def __init__(self):
-        self.cola = []  # Lista para almacenar los pull requests
+        # inicciamos el area de staging con una pila vacia y sin commit
+        self.pila = []  # en esta pila se almacenan los archivos que se agregan al area de staging
+        self.ultimo_commit = None  # esto almacenara el ultimo commit realizado
 
-    def crear_pull_request(self, titulo, descripcion, autor, rama_origen, rama_destino):
-        id_pr = len(self.cola) + 1  # Generar ID único basado en la longitud de la cola
-        pr = PullRequest(id_pr, titulo, descripcion, autor, rama_origen, rama_destino)  # Instanciar el pull request
-        self.cola.append(pr)  # Agregar el pull request a la cola
-        print(f"Pull Request creado: {pr.id_pr} - {pr.titulo}")  # Mensaje de confirmación
-
-    def mostrar_estado(self):
-        if not self.cola:  # Verificar si la cola está vacía
-            print("No hay pull requests en la cola.")  # Mensaje si no hay PRs
-            return
-        for pr in self.cola:  # Iterar sobre los pull requests en la cola
-            print(f"{pr.id_pr}: {pr.titulo} - {pr.estado}")  # Mostrar ID, título y estado de cada PR
-
-    def revisar_pr(self, id_pr):
-        for pr in self.cola:  # Buscar el pull request por ID
-            if pr.id_pr == id_pr:
-                pr.estado = "en revisión"  # Cambiar estado a "en revisión"
-                print(f"Pull Request {id_pr} marcado como en revisión.")  # Mensaje de confirmación
-                return
-        print(f"Pull Request {id_pr} no encontrado.")  # Mensaje si no se encuentra el PR
-
-    def aprobar_pr(self, id_pr):
-        for pr in self.cola:  # Buscar el pull request por ID
-            if pr.id_pr == id_pr:
-                pr.estado = "aprobado"  # Cambiar estado a "aprobado"
-                print(f"Pull Request {id_pr} aprobado.")  # Mensaje de confirmación
-                return
-        print(f"Pull Request {id_pr} no encontrado.")  # Mensaje si no se encuentra el PR
-
-    def rechazar_pr(self, id_pr):
-        for pr in self.cola:  # Buscar el pull request por ID
-            if pr.id_pr == id_pr:
-                pr.estado = "rechazado"  # Cambiar estado a "rechazado"
-                print(f"Pull Request {id_pr} rechazado.")  # Mensaje de confirmación
-                self.cola.remove(pr)  # Eliminar el PR de la cola
-                return
-        print(f"Pull Request {id_pr} no encontrado.")  # Mensaje si no se encuentra el PR
-
-    def cancelar_pr(self, id_pr):
-        for pr in self.cola:  # Buscar el pull request por ID
-            if pr.id_pr == id_pr:
-                self.cola.remove(pr)  # Eliminar el PR de la cola
-                print(f"Pull Request {id_pr} cancelado.")  # Mensaje de confirmación
-                return
-        print(f"Pull Request {id_pr} no encontrado.")  # Mensaje si no se encuentra el PR
-
-    def listar_pr(self):
-        self.mostrar_estado()  # Llamar a mostrar_estado para listar los PRs
-
-    def procesar_siguiente(self):
-        if self.cola:  # Verificar si hay pull requests en la cola
-            siguiente_pr = self.cola[0]  # Tomar el siguiente PR en la cola
-            siguiente_pr.estado = "en proceso"  # Cambiar estado a "en proceso"
-            print(f"Procesando Pull Request: {siguiente_pr.id_pr} - {siguiente_pr.titulo}")  # Mensaje de confirmación
+    def agregar_archivo(self, nombre, estado): 
+        # metodo add que es para agregar un archivo al area de staging
+        ubicacion = nombre  # aqui defino la ubicaicon que es la raiz
+        checksum = self.calcular_checksum(ubicacion)  # Calcula el checksum del archivo 
+        if checksum:  # Solo agrega el archivo si el checksum se caluclo bien
+            archivo = Archivo(nombre, ubicacion, estado, checksum)  # Crea un objeto Archivo
+            self.pila.append(archivo)  # Agrega el archivo a la pila de staging
+            print(f"Archivo agregado: {nombre} ({estado})") 
         else:
-            print("No hay pull requests para procesar.")  # Mensaje si no hay PRs en la cola
+            print(f"No se pudo agregar el archivo: {nombre}")
+
+    def calcular_checksum(self, ubicacion):
+        hasher = hashlib.sha1()  # Crea un objeto hash utilizando SHA-1
+        try:
+            with open(ubicacion, 'rb') as f:  # Intenta abrir el archivo en modo binario
+                while chunk := f.read(8192):  # Lee el archivo en bloques de 8192 bytes porqe es mas eficiente
+                    hasher.update(chunk)  # actualiza el hash con el contenido del archivo
+            return hasher.hexdigest()  # Retorna el checksum en formato hexadecimal
+        except FileNotFoundError:
+            print(f"Error: El archivo {ubicacion} no se encontró.")
+            return None  # devuelve None si hay error
+
+    def confirmar_cambios(self):
+        print("Cambios confirmados. Archivos en staging:")
+        for archivo in self.pila:  # Itera sobre los archivos en la pila de staging
+            print(f"Confirmado: {archivo.nombre} ({archivo.estado})")
+        self.pila.clear() # limpiamos el area de staging
+
+    def mostrar_archivos(self):
+
+        if not self.pila:  #  vemos si al pila no tiene nada
+            print("No hay archivos en el área de staging.") 
+            return
+        for archivo in self.pila:  # nteramos en los archivos en la pila de staging
+            print(f"{archivo.estado} - {archivo.nombre} ({archivo.ubicacion})")
