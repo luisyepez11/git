@@ -57,10 +57,10 @@ class Menu:
                     gestorVersiones.repositoriosActual.mostrarRamas()
                 elif bandera == 4:
                     nombre_archivo = input("Ingrese el nombre del archivo: ")
-                    ubicacion_archivo = input("Ingrese la ubicación del archivo: ")
                     estado = input("Ingrese el estado (A/M/D): ")
-                    staging.agregar_archivo(nombre_archivo, ubicacion_archivo, estado)
+                    staging.agregar_archivo(nombre_archivo, estado)
                 elif bandera == 5:
+                    ls.git_commit(input("Ingrese el mensaje del commit: "), gestorVersiones.repositoriosActual.rama_actual, gestorVersiones.repositoriosActual.nombre)
                     staging.confirmar_cambios()
                 elif bandera == 6:
                     ls.git_log()
