@@ -62,6 +62,7 @@ class Menu:
                     staging.agregar_archivo(nombre_archivo, ubicacion_archivo, estado)
                 elif bandera == 5:
                     staging.confirmar_cambios()
+                    ls.git_commit(input("Ingrese el mensaje del commit: "), gestorVersiones.repositoriosActual.rama_actual, gestorVersiones.repositoriosActual.nombre)
                 elif bandera == 6:
                     ls.git_log()
                 elif bandera == 7:
