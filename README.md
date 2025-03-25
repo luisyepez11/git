@@ -5,4 +5,4 @@
 | Estudiante | Cedula  |
 | :-------- | :------- |
 | `Franyer Marin` | `32.293.396` | 
-| `Luis Yepez` | `31.` |  
+| `Luis Yepez` | `31.562.660` |  
